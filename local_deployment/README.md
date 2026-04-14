@@ -10,20 +10,20 @@ The skills, instructions, and standards in this repo are designed to be portable
 
 ## What Goes Here
 
-| File | Purpose |
-|------|---------|
-| `databricks.yml` | DAB bundle config -- workspace host, catalog, schema, variables |
-| `resources/datagen_job.yml` | DAB job resource -- deploys and runs the data generation notebook |
-| `mcp_config.json` | Local MCP connection config (copy from `mcp/mcp_config.example.json`) |
-| Any other `.yml`, `.json`, `.env` | Environment-specific overrides |
+| File | Location | Purpose |
+|------|----------|---------|
+| `databricks.yml` | **Repo root** | DAB bundle config -- workspace host, catalog, schema, variables |
+| `resources/datagen_job.yml` | `local_deployment/` | DAB job resource -- deploys and runs the data generation notebook |
+| `mcp_config.json` | `local_deployment/` | Local MCP connection config (copy from `mcp/mcp_config.example.json`) |
+| Any other `.yml`, `.json`, `.env` | `local_deployment/` | Environment-specific overrides |
 
 ## For Other Users of This Repo
 
 If you clone this repo and want to deploy to your own workspace:
 
-1. Create this `local_deployment/` folder (it's gitignored, so it won't exist after a fresh clone)
-2. Copy the example below and fill in your values
-3. Run `databricks bundle deploy` from this folder
+1. Create `databricks.yml` at the **repo root** (it's gitignored)
+2. Create `local_deployment/resources/` folder with your job configs
+3. Run `databricks bundle deploy` from the **repo root**
 
 ### Example `databricks.yml`
 

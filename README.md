@@ -72,18 +72,15 @@ Connect a GitHub MCP server that points to the same skills in this repo. Add cus
 
 ### 1. Install Skills
 
-Copy the skill files to your Databricks workspace:
+Copy the skill files from `skills/data_eng/` to your Databricks workspace:
 
 ```
 Workspace/
   .assistant/
     skills/
-      table-governance/
-        SKILL.md          # paste content from skills/data_eng/table-governance.md
-      sdp-basics/
-        SKILL.md          # paste content from skills/data_eng/sdp-basics.md
-      pii-management/
-        SKILL.md          # paste content from skills/data_eng/pii-management.md
+      table-governance.md
+      sdp-basics.md
+      pii-management.md
 ```
 
 Skills can be installed at the workspace level (`Workspace/.assistant/skills/`) or user level (`/Users/{username}/.assistant/skills/`).
@@ -141,11 +138,10 @@ Generate synthetic financial data to test the skills end-to-end. The data genera
 Set up a local deployment folder with your workspace-specific config:
 
 ```bash
-# The local_deployment/ folder is gitignored -- create your own config
-# See local_deployment/README.md for full instructions and examples
-cd local_deployment/
+# See local_deployment/README.md for full setup instructions and examples
+# Create databricks.yml at the repo root and resource configs in local_deployment/resources/
 
-# Deploy and run
+# Deploy and run from the repo root
 databricks bundle deploy --profile <your-cli-profile>
 databricks bundle run generate_financial_data --profile <your-cli-profile>
 ```
@@ -193,7 +189,7 @@ genie-code-skills-demo/
 ├── LICENSE.md
 ├── NOTICE.md
 ├── SECURITY.md
-├── CODEOWNERS.txt
+├── CODEOWNERS
 └── .gitignore
 ```
 
