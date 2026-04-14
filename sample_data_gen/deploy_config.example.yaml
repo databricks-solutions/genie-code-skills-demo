@@ -1,0 +1,10 @@
+# Sample Data Generation -- Deployment Config
+#
+# Copy this file to deploy_config.yaml and fill in your workspace details.
+# deploy_config.yaml is gitignored and will never be committed.
+
+workspace_host: https://<your-workspace>.cloud.databricks.com
+profile: <your-cli-profile>
+catalog: <your-catalog>
+schema: <your-schema>
+volume: raw_data
