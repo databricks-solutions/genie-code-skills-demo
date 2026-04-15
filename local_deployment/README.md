@@ -10,11 +10,12 @@ The skills, instructions, and standards in this repo are designed to be portable
 
 ## What Goes Here
 
-| File | Location | Purpose |
-|------|----------|---------|
+| File / Folder | Location | Purpose |
+|---------------|----------|---------|
 | `databricks.yml` | **Repo root** | DAB bundle config -- workspace host, catalog, schema, variables |
 | `resources/datagen_job.yml` | `local_deployment/` | DAB job resource -- deploys and runs the data generation notebook |
 | `mcp_config.json` | `local_deployment/` | Local MCP connection config (copy from `mcp/mcp_config.example.json`) |
+| `instructions_to_use/` | `local_deployment/` | Ready-to-use instruction files with your org/repo values filled in |
 | Any other `.yml`, `.json`, `.env` | `local_deployment/` | Environment-specific overrides |
 
 ## For Other Users of This Repo
@@ -112,6 +113,23 @@ COMMENT 'GitHub MCP - Genie Code skills and standards';
 ```sql
 DESCRIBE CONNECTION `genie-code-skills-mcp`;
 ```
+
+### Instructions
+
+The `instructions/` folder at the repo root contains **templates** with placeholders. To create ready-to-use versions:
+
+1. Create `local_deployment/instructions_to_use/` (gitignored)
+2. Pick the files that match your approach:
+
+| Scope | Direct Skills | MCP |
+|-------|--------------|-----|
+| User-level | `user_instructions_skills.md` | `user_instructions_mcp.md` |
+| Workspace-level | `workspace_instructions_skills.md` | `workspace_instructions_mcp.md` |
+
+3. Fill in your GitHub org/repo (MCP files only) and any pipeline names
+4. Upload to your workspace:
+   - User-level → `/Users/{username}/.assistant_instructions.md`
+   - Workspace-level → `Workspace/.assistant_workspace_instructions.md`
 
 ### Deploy
 
