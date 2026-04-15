@@ -1,0 +1,9 @@
+{
+  "github_owner": "<your-github-org-or-user>",
+  "github_repo": "<your-repo>",
+  "branch": "main",
+  "base_path": "skills/data_eng",
+  "secret_scope": "<your-secret-scope>",
+  "secret_key": "GITHUB_PAT",
+  "connection_name": "genie-code-skills-mcp"
+}
