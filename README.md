@@ -165,6 +165,10 @@ With the sample data in your volume, use Genie Code:
 
 Genie Code will apply the skills and standards automatically.
 
+### Run the Demo
+
+For a guided walkthrough that progressively adds skills, instructions, and MCP, see [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md). It includes specific prompts, setup/cleanup steps for each stage, and observation checklists showing what to look for.
+
 ---
 
 ## Project Structure
@@ -190,6 +194,8 @@ genie-code-skills-demo/
 │   ├── generate_financial_data.py          # Databricks notebook (dbldatagen, parameterized)
 │   ├── deploy_config.example.yaml          # Deploy config template (placeholders)
 │   └── deploy.sh                           # Deploy script (reads local config)
+├── docs/
+│   └── DEMO_SCRIPT.md                     # Four-stage guided demo walkthrough
 ├── local_deployment/                       # GITIGNORED (except README)
 │   ├── README.md                           # How to set up your own local deployment
 │   └── instructions_to_use/               # Ready-to-use instruction files (filled in)
