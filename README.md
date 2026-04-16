@@ -116,14 +116,21 @@ Copy the printed SQL and run it in a Databricks SQL Editor.
 
 ### 3. Add Instructions
 
-Choose user-level, workspace-level, or both:
+The `instructions/` folder contains **templates** with placeholders. To create ready-to-use instruction files for your workspace:
 
-- **User-level**: Copy `instructions/.assistant_instructions.md` to `/Users/{username}/.assistant_instructions.md` in your workspace
-- **Workspace-level**: Copy `instructions/.assistant_workspace_instructions.md` to `Workspace/.assistant_workspace_instructions.md`
+1. Set up your local deployment folder (see `local_deployment/README.md`)
+2. Choose your approach (**direct skills** or **MCP**) and scope (**user-level** or **workspace-level**)
+3. Copy the matching ready-to-use file from `local_deployment/instructions_to_use/`:
 
-Each template contains two options -- choose one based on your setup:
-- **Option A**: Reference skills directly (if you uploaded skills to the workspace)
-- **Option B**: Fetch skills via MCP (if you set up a GitHub MCP connection)
+| Scope | Direct Skills | MCP |
+|-------|--------------|-----|
+| User-level | `user_instructions_skills.md` | `user_instructions_mcp.md` |
+| Workspace-level | `workspace_instructions_skills.md` | `workspace_instructions_mcp.md` |
+
+4. Fill in any remaining placeholders (GitHub org/repo for MCP files)
+5. Upload to your workspace:
+   - **User-level** → `/Users/{username}/.assistant_instructions.md`
+   - **Workspace-level** → `Workspace/.assistant_workspace_instructions.md`
 
 Workspace instructions take priority over user instructions when both are present.
 
@@ -158,6 +165,10 @@ With the sample data in your volume, use Genie Code:
 
 Genie Code will apply the skills and standards automatically.
 
+### Run the Demo
+
+For a guided walkthrough that progressively adds skills, instructions, and MCP, see [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md). It includes specific prompts, setup/cleanup steps for each stage, and observation checklists showing what to look for.
+
 ---
 
 ## Project Structure
@@ -173,9 +184,9 @@ genie-code-skills-demo/
 │       ├── table-governance.md             # Table/column documentation, UC tags, PII labeling
 │       ├── sdp-basics.md                   # SDP naming, audit columns, TBLPROPERTIES
 │       └── pii-management.md               # PII detection and labelling
-├── instructions/
-│   ├── .assistant_instructions.md          # User-level instructions template
-│   └── .assistant_workspace_instructions.md # Workspace-level instructions template
+├── instructions/                           # Instruction TEMPLATES (with placeholders)
+│   ├── .assistant_instructions.md          # User-level template
+│   └── .assistant_workspace_instructions.md # Workspace-level template
 ├── mcp/
 │   ├── mcp_config.example.json             # MCP config template (points to skills/ folder)
 │   └── deploy_mcp.py                       # MCP connection deploy script
@@ -183,8 +194,15 @@ genie-code-skills-demo/
 │   ├── generate_financial_data.py          # Databricks notebook (dbldatagen, parameterized)
 │   ├── deploy_config.example.yaml          # Deploy config template (placeholders)
 │   └── deploy.sh                           # Deploy script (reads local config)
+├── docs/
+│   └── DEMO_SCRIPT.md                     # Four-stage guided demo walkthrough
 ├── local_deployment/                       # GITIGNORED (except README)
-│   └── README.md                           # How to set up your own local deployment
+│   ├── README.md                           # How to set up your own local deployment
+│   └── instructions_to_use/               # Ready-to-use instruction files (filled in)
+│       ├── user_instructions_skills.md    # User-level, direct skills
+│       ├── user_instructions_mcp.md       # User-level, MCP
+│       ├── workspace_instructions_skills.md # Workspace-level, direct skills
+│       └── workspace_instructions_mcp.md  # Workspace-level, MCP
 ├── README.md
 ├── LICENSE.md
 ├── NOTICE.md
