@@ -35,9 +35,17 @@ Before running the demo:
 - No `.assistant_instructions.md` file
 - No MCP connections enabled in Genie Code
 
-### Prompts
+### Where to run the prompts
 
-Open Genie Code in Agent mode inside a pipeline and run these prompts:
+Every stage of this demo runs from the **SDP Pipelines UI** -- never the SQL editor or a notebook. Set up once and reuse for Stages 2-5:
+
+1. Workspace UI → **Pipelines** → open (or create) an empty SDP pipeline targeting `{catalog}.{schema}`.
+2. Inside the pipeline editor, open **Genie Code** in **Agent mode**.
+3. Start a **new conversation** for each stage so context (and any cached skills/instructions) is fresh.
+
+After each prompt, hit **Validate** (or **Run**) on the pipeline so the audience sees the table populate live in `{catalog}.{schema}`.
+
+### Prompts
 
 **Prompt 1a:**
 
@@ -105,7 +113,7 @@ Or upload to user level at `/Users/{username}/.assistant/skills/` for a personal
 
 ### Prompts
 
-Start a **new** Genie Code session (to clear context from Stage 1):
+Stay in the **same SDP pipeline** from Stage 1, but start a **new Genie Code Agent-mode conversation** so the freshly uploaded skills are picked up cleanly.
 
 **Prompt 2a:**
 
@@ -157,7 +165,7 @@ Keep the skills from Stage 2 in place. Add a user-level instructions file:
 
 ### Prompts
 
-Start a **new** Genie Code session:
+Stay in the **same SDP pipeline**, but start a **new Genie Code Agent-mode conversation** so the new instructions file is loaded.
 
 **Prompt 3a:**
 
@@ -219,7 +227,7 @@ DROP TABLE IF EXISTS {catalog}.{schema}.silver_accounts;
 
 ### Prompts
 
-Start a **new** Genie Code session:
+Stay in the **same SDP pipeline**, but start a **new Genie Code Agent-mode conversation**. With local skills now removed, you should be able to watch Genie Code call `get_file_contents` against the GitHub MCP server in the tool log.
 
 **Prompt 4a:**
 
@@ -275,19 +283,23 @@ SELECT COUNT(*) FROM {catalog}.bakehouse.customer_reviews;
 
 ### Prompts
 
-Start a **new** Genie Code session:
+Stay in the **same SDP pipeline** from Stages 1-4, but start a **new Genie Code Agent-mode conversation** so MCP fetches the new `sentiment-analysis` skill cleanly. You don't need to `@mention` any skills -- the Stage 4 user-level instructions already tell Genie Code to fetch governance + sentiment-analysis from MCP whenever the prompt fits.
 
-**Prompt 5a:**
+Run these one at a time, hitting **Validate** (or **Run**) on the pipeline after each one so the audience sees the bronze → silver → gold tables materialize.
 
-> Build a bronze table from `{catalog}.bakehouse.customer_reviews` that lands the raw review text and stable IDs.
+**Prompt 5a (bronze):**
 
-**Prompt 5b:**
+> Build me a bronze table from `{catalog}.bakehouse.customer_reviews` as source.
 
-> Build a silver table from the bronze reviews that adds `sentiment_label`, `topic_label`, and `extracted_entities` using AI functions. Apply the project standards.
+**Prompt 5b (silver):**
 
-**Prompt 5c:**
+> Build me a silver table from the bronze reviews that adds sentiment, topic, and extracted entities using AI functions.
 
-> Build a gold table that aggregates sentiment by franchise, joining `{catalog}.bakehouse.franchises`. Show positive and negative percentage by topic.
+**Prompt 5c (gold):**
+
+> Build me a gold table that aggregates sentiment by franchise -- join `{catalog}.bakehouse.franchises` to add the franchise name, and show positive and negative review percentages by topic.
+
+After each prompt, hit **Validate** (or **Run**) on the pipeline so you can show the resulting table populated in `{catalog}.{schema}` while the audience watches.
 
 ### What to observe
 
