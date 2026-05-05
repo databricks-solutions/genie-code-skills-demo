@@ -27,7 +27,8 @@ This repo provides example skills, instructions, and tooling organized by domain
 | Phase | Date | Domain | What's Included |
 |-------|------|--------|-----------------|
 | **Phase 1** | April 2026 | Data Engineering | SDP pipeline skills, PII management, table governance, MCP-based standards enforcement, sample financial data generation |
-| Planned | -- | DSML, Dashboards, Governance | Additional skill domains and MCP integrations |
+| **Phase 2** | May 2026 | DSML | `sentiment-analysis` skill, AI-function patterns (`ai_analyze_sentiment`, `ai_classify`, `ai_extract`), AI/BI Bakehouse Marketplace install |
+| Planned | -- | Dashboards, Governance | Additional skill domains and MCP integrations |
 
 ---
 
@@ -36,9 +37,11 @@ This repo provides example skills, instructions, and tooling organized by domain
 | Folder | Contents |
 |--------|----------|
 | `skills/data_eng/` | Skills for SDP pipelines, PII management, and table/column governance |
+| `skills/dsml/` | DSML skills (currently `sentiment-analysis` for AI-function pipelines) |
 | `instructions/` | Custom instruction templates (user-level and workspace-level) |
 | `mcp/` | MCP connection setup: deploy script and config template |
 | `sample_data_gen/` | Synthetic financial data generation notebook (uses `dbldatagen`) |
+| `marketplace_data/` | Installer notebook + config template for sourcing datasets from the Databricks Marketplace (currently AI/BI Bakehouse) |
 | `local_deployment/` | **Gitignored.** Your workspace-specific DAB config for deploying to your environment. See `local_deployment/README.md` for setup instructions. |
 
 ---
@@ -171,6 +174,51 @@ For a guided walkthrough that progressively adds skills, instructions, and MCP, 
 
 ---
 
+## Try It Yourself -- Bakehouse Sentiment Analysis
+
+Stage 5 of the demo applies the new `@sentiment-analysis` skill to the **AI/BI Bakehouse** dataset from the Databricks Marketplace. The flow is:
+
+1. Install the Marketplace share into a scratch catalog and mirror selected tables into a new schema inside your existing demo catalog. This keeps the demo data under one predictable namespace (`<demo_catalog>.bakehouse.*`).
+2. Use Genie Code with `@sentiment-analysis` to generate bronze/silver/gold tables that turn `<demo_catalog>.bakehouse.customer_reviews` into a sentiment dataset using AI functions (`ai_analyze_sentiment`, `ai_classify`, `ai_extract`).
+
+### 1. Install the Bakehouse share + mirror into the demo catalog
+
+Copy the config template and fill in your workspace details:
+
+```bash
+cp marketplace_data/bakehouse_config.example.yaml local_deployment/bakehouse_config.yaml
+# Edit local_deployment/bakehouse_config.yaml:
+#   workspace_host, profile,
+#   scratch_catalog_name  (where the share lands -- pick a unique per-user name),
+#   demo_catalog          (your existing demo catalog),
+#   demo_schema           (default: bakehouse)
+```
+
+Then either deploy via DAB:
+
+```bash
+databricks bundle deploy --profile <your-cli-profile>
+databricks bundle run install_bakehouse --profile <your-cli-profile>
+```
+
+…or run the standalone script:
+
+```bash
+./marketplace_data/deploy.sh --run
+```
+
+The notebook is idempotent: it skips the Marketplace install when `scratch_catalog_name` already exists, and uses `CREATE OR REPLACE TABLE` for the mirror so re-runs are safe.
+
+### 2. Generate the pipeline with Genie Code
+
+In a Genie Code session with the skills available (workspace-uploaded or via MCP):
+
+> Build a bronze, silver, and gold pipeline from `<demo_catalog>.bakehouse.customer_reviews`. Add sentiment, topic, and extracted entities on silver using AI functions, then aggregate sentiment by franchise on gold. Apply `@table-governance`, `@sdp-basics`, `@pii-management`, and `@sentiment-analysis`.
+
+The result is a governed sentiment-analysis pipeline that follows every project standard: layer prefixes, audit columns, AI cost guardrails, sentiment label constraints, and PII annotations on the raw `review_text`.
+
+---
+
 ## Project Structure
 
 ```
@@ -180,10 +228,12 @@ genie-code-skills-demo/
 │   ├── coding-standards.md
 │   └── branch-conventions.md
 ├── skills/
-│   └── data_eng/                           # Data engineering skills (also served via MCP)
-│       ├── table-governance.md             # Table/column documentation, UC tags, PII labeling
-│       ├── sdp-basics.md                   # SDP naming, audit columns, TBLPROPERTIES
-│       └── pii-management.md               # PII detection and labelling
+│   ├── data_eng/                           # Data engineering skills (also served via MCP)
+│   │   ├── table-governance.md             # Table/column documentation, UC tags, PII labeling
+│   │   ├── sdp-basics.md                   # SDP naming, audit columns, TBLPROPERTIES
+│   │   └── pii-management.md               # PII detection and labelling
+│   └── dsml/
+│       └── sentiment-analysis.md           # AI-function patterns (ai_analyze_sentiment, ai_classify, ai_extract)
 ├── instructions/                           # Instruction TEMPLATES (with placeholders)
 │   ├── .assistant_instructions.md          # User-level template
 │   └── .assistant_workspace_instructions.md # Workspace-level template
@@ -194,8 +244,12 @@ genie-code-skills-demo/
 │   ├── generate_financial_data.py          # Databricks notebook (dbldatagen, parameterized)
 │   ├── deploy_config.example.yaml          # Deploy config template (placeholders)
 │   └── deploy.sh                           # Deploy script (reads local config)
+├── marketplace_data/
+│   ├── install_bakehouse.py                # Databricks notebook (uses databricks-sdk Marketplace API)
+│   ├── bakehouse_config.example.yaml       # Bakehouse install config template (placeholders)
+│   └── deploy.sh                           # Deploy/run script for the install notebook
 ├── docs/
-│   └── DEMO_SCRIPT.md                     # Four-stage guided demo walkthrough
+│   └── DEMO_SCRIPT.md                     # Five-stage guided demo walkthrough
 ├── local_deployment/                       # GITIGNORED (except README)
 │   ├── README.md                           # How to set up your own local deployment
 │   └── instructions_to_use/               # Ready-to-use instruction files (filled in)

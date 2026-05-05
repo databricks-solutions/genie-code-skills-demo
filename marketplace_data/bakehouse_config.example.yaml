@@ -1,0 +1,34 @@
+# Bakehouse Marketplace Install -- Deployment Config
+#
+# Copy this file to local_deployment/bakehouse_config.yaml (gitignored) and fill in
+# your workspace-specific values. The deploy script reads from that local copy.
+#
+# This file is generic and safe to commit -- it must not contain workspace URLs,
+# CLI profiles, or catalog names that are specific to your environment.
+
+workspace_host: https://<your-workspace>.cloud.databricks.com
+profile: <your-cli-profile>
+
+# Comma-separated list of catalog names to probe for an already-accessible
+# Bakehouse share before falling back to a Marketplace install. On shared field
+# demo workspaces Bakehouse is usually pre-installed under a well-known name --
+# add it here so the notebook reuses it instead of installing a duplicate.
+candidate_source_catalogs: bakehouse
+
+# Fallback ONLY: scratch catalog used by the notebook when no candidate above is
+# readable. Marketplace shares can only land in their own catalog (Databricks
+# constraint), so this is treated as a staging area that the demo never reads
+# from directly. Pick a unique per-user name to avoid collisions.
+scratch_catalog_name: bakehouse_share_scratch
+
+# Marketplace listing details, used only by the fallback path. Override if your
+# workspace surfaces a different listing name or provider.
+listing_name: AI/BI Bakehouse
+share_provider_name: databricks
+
+# Selected Bakehouse tables are CTAS-mirrored into this catalog and schema so
+# the rest of the demo lives under the same namespace as the synthetic
+# financial data. The catalog must already exist (the demo catalog from
+# `databricks.yml`); the schema is created if missing.
+demo_catalog: <your-demo-catalog>
+demo_schema: bakehouse
