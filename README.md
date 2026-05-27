@@ -46,6 +46,27 @@ This repo provides example skills, instructions, and tooling organized by domain
 
 ---
 
+## Companion Skills (databricks-agent-skills)
+
+The skills in this repo are the **enterprise governance overlay** — naming conventions, audit columns, TBLPROPERTIES requirements, PII policies. For the **generic Databricks knowledge** that sits underneath (CLI usage, Lakeflow Jobs syntax, SDP semantics, Asset Bundles, Lakebase, Model Serving, …), use [`databricks/databricks-agent-skills`](https://github.com/databricks/databricks-agent-skills) ("DAS"). It is the canonical source and ships a CLI installer:
+
+```bash
+databricks aitools install                       # all stable DAS skills
+databricks aitools install databricks-pipelines  # just the SDP skill
+databricks aitools install databricks-jobs       # just the Lakeflow Jobs skill
+```
+
+The two compose: DAS teaches *how Databricks works*, and the skills in this repo encode *how this enterprise wants it written*. The most relevant DAS skills for a Genie Code + SDP workflow are:
+
+- `databricks-core` — CLI, auth, profile selection (parent skill)
+- `databricks-pipelines` — Lakeflow Spark Declarative Pipelines (formerly DLT)
+- `databricks-jobs` — Lakeflow Jobs orchestration
+- `databricks-dabs` — Declarative Automation Bundles (formerly Asset Bundles)
+
+DAS install is optional for running the demo; the stages in [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) work without it.
+
+---
+
 ## How It Works
 
 This demo shows three stages of Genie Code customization:

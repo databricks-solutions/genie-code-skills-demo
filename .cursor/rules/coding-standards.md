@@ -12,7 +12,7 @@
 
 - Always build SDP (Spark Declarative Pipelines) using **SQL, not Python**. All tables must be defined as `CREATE OR REFRESH MATERIALIZED VIEW` or `CREATE OR REFRESH STREAMING TABLE` in `.sql` files.
 - Use `dbldatagen` (Databricks Labs Data Generator) for synthetic data generation. Prefer it over hand-rolling random data with pandas/Faker for Spark-scale data.
-- For Databricks-specific patterns and best practices, refer to the [Databricks AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit).
+- For Databricks-specific patterns and best practices, see [`databricks/databricks-agent-skills`](https://github.com/databricks/databricks-agent-skills). Install with `databricks aitools install`.
 
 ## Documentation
 
