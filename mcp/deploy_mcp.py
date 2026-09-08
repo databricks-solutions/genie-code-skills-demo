@@ -73,7 +73,15 @@ def setup_secret_scope(w: WorkspaceClient, config: dict) -> None:
     except ResourceAlreadyExists:
         print(f"Secret scope already exists: {scope}")
 
-    pat = getpass.getpass("Enter your GitHub PAT: ")
+    # The repo is public, so the GitHub MCP server only needs a token to
+    # authenticate the caller -- it does NOT need any scopes. A classic PAT with
+    # no scopes selected (or a fine-grained PAT with read-only Contents access to
+    # the public repo) is sufficient. Do not grant repo / read:org / etc.
+    print(
+        "\nNOTE: This repo is public, so a no-scope (or minimal read-only) "
+        "GitHub PAT is sufficient. Do not grant privileged scopes."
+    )
+    pat = getpass.getpass("Enter your GitHub PAT (no scopes required): ")
     if not pat.strip():
         print("ERROR: PAT cannot be empty.")
         sys.exit(1)
@@ -90,9 +98,9 @@ def print_connection_sql(config: dict) -> None:
     repo = config["github_repo"]
 
     create_sql = f"""\
--- Run this in a Databricks SQL Editor to create the MCP connection.
--- The secret() function only resolves correctly in SQL Editor context.
--- Do NOT create this connection via API, CLI, or DAB.
+-- Run this in a SQL context so that secret() resolves: the Databricks SQL
+-- Editor, or the SQL Statement Execution API against a SQL warehouse.
+-- Plain REST/CLI catalog APIs and DAB do NOT resolve secret().
 -- Requires CREATE CONNECTION privilege on the metastore.
 
 CREATE CONNECTION IF NOT EXISTS `{conn_name}`

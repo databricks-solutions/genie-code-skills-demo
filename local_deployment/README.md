@@ -154,9 +154,9 @@ Re-runs are safe: the Marketplace install is skipped if the scratch catalog alre
 
 ### MCP Connection
 
-The MCP connection **must** be created via SQL Editor (not API/CLI/DAB). The `secret()` function only resolves correctly in SQL context.
+The MCP connection must be created in a **SQL context** so that the `secret()` function resolves -- the SQL Editor works, and so does the SQL Statement Execution API (run against a SQL warehouse). Plain REST/CLI catalog APIs and DAB do **not** resolve `secret()`, so use one of the SQL paths below.
 
-1. Store your GitHub PAT in a secret scope:
+1. Store your GitHub PAT in a secret scope. Because this repo is **public**, the token needs **no scopes** -- a classic PAT with no scopes selected, or a fine-grained PAT with read-only `Contents` access to the public repo, is enough (do not grant `repo` / `read:org`):
 
 ```bash
 databricks secrets create-scope <your-scope> --profile <your-cli-profile>

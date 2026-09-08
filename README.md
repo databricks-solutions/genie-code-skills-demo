@@ -94,6 +94,8 @@ Once installed, Genie Code picks them up automatically. You can also invoke them
 
 Connect Genie Code to a GitHub MCP server to fetch the same skills dynamically -- no need to copy files into the workspace manually. The MCP connection points directly to the `skills/data_eng/` folder in this repo (or your fork of it).
 
+> **About the GitHub token:** the GitHub-hosted MCP server requires a token to authenticate, but because this repo is **public** the token needs **no scopes**. A classic PAT with **no scopes selected**, or a fine-grained PAT with **read-only `Contents` access to the public repo**, is sufficient. Do not grant `repo`, `read:org`, or other privileged scopes.
+
 **a. Configure**
 
 ```bash
