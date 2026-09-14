@@ -7,6 +7,8 @@ description: Apply basic SDP pipeline best practices for table naming, comments,
 
 Always build SDP pipelines using SQL (not Python). When creating or modifying tables in SDP pipelines, follow these rules.
 
+For copy-paste SQL patterns (bronze CREATE, audit columns, data-quality flag), read [sql-templates.md](sql-templates.md).
+
 ## Table Naming
 
 All table names MUST use `lowercase_snake_case` with a layer prefix:
@@ -49,12 +51,7 @@ TBLPROPERTIES ("quality" = "gold", "delta.enableChangeDataFeed" = "true")
 
 ## Audit Columns
 
-Every table MUST include these two columns as the LAST columns in the SELECT:
-
-```sql
-current_timestamp() AS audit_timestamp,
-'<source_description>' AS source_system
-```
+Every table MUST include these two columns as the LAST columns in the SELECT. See [sql-templates.md](sql-templates.md) for the exact expressions.
 
 ## Data Quality Constraints
 
@@ -66,15 +63,7 @@ current_timestamp() AS audit_timestamp,
 
 ## Data Quality Flag
 
-Silver tables MUST include a `data_quality_flag` column:
-
-```sql
-CASE
-  WHEN <field> IS NULL THEN 'MISSING_<FIELD>'
-  WHEN <field> < 0 THEN 'NEGATIVE_<FIELD>'
-  ELSE 'CLEAN'
-END AS data_quality_flag
-```
+Silver tables MUST include a `data_quality_flag` column. Use the CASE pattern in [sql-templates.md](sql-templates.md).
 
 ## SQL Formatting
 
@@ -103,17 +92,3 @@ Add `CLUSTER BY AUTO` for `STREAMING TABLE` definitions.
 - Use `LIVE.table_name` to reference tables within the same pipeline
 - Use fully qualified names for tables outside the pipeline
 - Always use explicit `JOIN` syntax with table aliases
-
-## Example
-
-```sql
-CREATE OR REFRESH MATERIALIZED VIEW bronze_transactions
-COMMENT "Raw transaction data from POS systems"
-TBLPROPERTIES ("quality" = "bronze")
-AS SELECT
-  *,
-  current_timestamp() AS audit_timestamp,
-  'pos' AS source_system
-FROM source_table
-WHERE transaction_id IS NOT NULL;
-```

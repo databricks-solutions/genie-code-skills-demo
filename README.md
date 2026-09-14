@@ -16,7 +16,7 @@ Example [Genie Code](https://docs.databricks.com/aws/en/genie-code/) skills, cus
 - **Manage Unity Catalog** -- governance, permissions, lineage
 - **Orchestrate jobs and workflows** -- scheduling, dependencies, monitoring
 
-Genie Code supports **skills** (task-specific instructions following the open [Agent Skills](https://agentskills.io/) standard) and **MCP** ([Model Context Protocol](https://modelcontextprotocol.io/)) connections that fetch enterprise standards from external sources like GitHub.
+Genie Code supports **skills** (task-specific instructions following the open [Agent Skills](https://agentskills.io/) standard -- each skill is a folder with a `SKILL.md`), **instructions** (user- and workspace-level, plus auto-discovered `AGENTS.md` / `CLAUDE.md` files), and **MCP** ([Model Context Protocol](https://modelcontextprotocol.io/)) connections that fetch enterprise standards from external sources like GitHub.
 
 ---
 
@@ -36,8 +36,8 @@ This repo provides example skills, instructions, and tooling organized by domain
 
 | Folder | Contents |
 |--------|----------|
-| `skills/data_eng/` | Skills for SDP pipelines, PII management, and table/column governance |
-| `skills/dsml/` | DSML skills (currently `sentiment-analysis` for AI-function pipelines) |
+| `skills/` | One folder per skill: `SKILL.md` plus companion template markdown (`table-governance`, `sdp-basics`, `pii-management`, `sentiment-analysis`; also served via MCP) |
+| `AGENTS.md` | Auto-discovered enterprise standards -- Genie Code reads this automatically from the workspace directory tree |
 | `instructions/` | Custom instruction templates (user-level and workspace-level) |
 | `mcp/` | MCP connection setup: deploy script and config template |
 | `sample_data_gen/` | Synthetic financial data generation notebook (uses `dbldatagen`) |
@@ -75,24 +75,28 @@ Connect a GitHub MCP server that points to the same skills in this repo. Add cus
 
 ### 1. Install Skills
 
-Copy the skill files from `skills/data_eng/` to your Databricks workspace:
+Copy each skill **folder** from `skills/` to your Databricks workspace. Each skill is its own folder with a required `SKILL.md` plus companion template markdown (the layout from [Extend Genie Code with agent skills](https://docs.databricks.com/aws/en/genie-code/skills)):
 
 ```
-Workspace/
-  .assistant/
-    skills/
-      table-governance.md
-      sdp-basics.md
-      pii-management.md
+Workspace/.assistant/skills/
+  table-governance/
+    SKILL.md
+    governance-template.md
+  sdp-basics/
+    SKILL.md
+    sql-templates.md
+  pii-management/
+    SKILL.md
+    masking-templates.md
 ```
 
 Skills can be installed at the workspace level (`Workspace/.assistant/skills/`) or user level (`/Users/{username}/.assistant/skills/`).
 
-Once installed, Genie Code picks them up automatically. You can also invoke them explicitly with `@table-governance`, `@sdp-basics`, or `@pii-management`.
+Once installed, Genie Code auto-loads a skill when your request matches its `description`. In chat, you can still force a skill with `@table-governance`, `@sdp-basics`, or `@pii-management` (`@` is skill invocation, not instruction syntax).
 
 ### 2. Set Up MCP (Optional)
 
-Connect Genie Code to a GitHub MCP server to fetch the same skills dynamically -- no need to copy files into the workspace manually. The MCP connection points directly to the `skills/data_eng/` folder in this repo (or your fork of it).
+Connect Genie Code to a GitHub MCP server to fetch the same skills dynamically -- no need to copy files into the workspace manually. The MCP connection points directly to the `skills/` folder in this repo (or your fork of it).
 
 > **About the GitHub token:** the GitHub-hosted MCP server requires a token to authenticate, but because this repo is **public** the token needs **no scopes**. A classic PAT with **no scopes selected**, or a fine-grained PAT with **read-only `Contents` access to the public repo**, is sufficient. Do not grant `repo`, `read:org`, or other privileged scopes.
 
@@ -138,6 +142,8 @@ The `instructions/` folder contains **templates** with placeholders. To create r
    - **Workspace-level** → `Workspace/.assistant_workspace_instructions.md`
 
 Workspace instructions take priority over user instructions when both are present.
+
+> **Auto-discovered instructions:** Genie Code also walks up the workspace directory tree and automatically reads any `AGENTS.md` (or `CLAUDE.md`) files it finds -- no upload or configuration needed. This repo ships a root [`AGENTS.md`](AGENTS.md) with the always-on standards, so once the repo is synced into a workspace those conventions apply to every teammate automatically. See [Customize Genie Code with custom instructions](https://docs.databricks.com/aws/en/genie-code/instructions).
 
 ---
 
@@ -229,13 +235,20 @@ genie-code-skills-demo/
 │   ├── public-repo-compliance.md
 │   ├── coding-standards.md
 │   └── branch-conventions.md
-├── skills/
-│   ├── data_eng/                           # Data engineering skills (also served via MCP)
-│   │   ├── table-governance.md             # Table/column documentation, UC tags, PII labeling
-│   │   ├── sdp-basics.md                   # SDP naming, audit columns, TBLPROPERTIES
-│   │   └── pii-management.md               # PII detection and labelling
-│   └── dsml/
-│       └── sentiment-analysis.md           # AI-function patterns (ai_analyze_sentiment, ai_classify, ai_extract)
+├── AGENTS.md                               # Auto-discovered enterprise standards (Genie Code reads this automatically)
+├── skills/                                 # One folder per skill (also served via MCP)
+│   ├── table-governance/
+│   │   ├── SKILL.md                        # Governance rules and checklist
+│   │   └── governance-template.md          # Reusable CREATE / ALTER / TAG SQL
+│   ├── sdp-basics/
+│   │   ├── SKILL.md                        # Naming, audit columns, DQ rules
+│   │   └── sql-templates.md                # Reusable CREATE SQL
+│   ├── pii-management/
+│   │   ├── SKILL.md                        # Detection, labeling, layer rules
+│   │   └── masking-templates.md            # Reusable masking / derivation SQL
+│   └── sentiment-analysis/
+│       ├── SKILL.md                        # AI-function rules and guardrails
+│       └── pipeline-templates.md           # Bronze / silver / gold SQL
 ├── instructions/                           # Instruction TEMPLATES (with placeholders)
 │   ├── .assistant_instructions.md          # User-level template
 │   └── .assistant_workspace_instructions.md # Workspace-level template
@@ -273,8 +286,8 @@ genie-code-skills-demo/
 
 This repo is a starting point. To adapt it for your organization:
 
-1. **Add your own skills** -- create new `.md` files in `skills/data_eng/` or add new domain folders (e.g., `skills/dsml/`, `skills/dashboards/`)
-2. **Update existing skills** -- edit the skill files in `skills/data_eng/` to match your organization's naming conventions, PII policies, and quality rules
+1. **Add your own skills** -- create a new folder in `skills/` with a `SKILL.md` (frontmatter `name` + `description`, matching the folder name). Optionally add companion markdown for templates, as in the official skill layout.
+2. **Update existing skills** -- edit `SKILL.md` and the companion template files under `skills/<skill-name>/` to match your organization's naming conventions, PII policies, and quality rules
 3. **Fork and serve via MCP** -- fork this repo, customize the skills, and point your MCP connection to your fork. Changes in GitHub are picked up automatically by Genie Code.
 4. **Customize instructions** -- edit the templates in `instructions/` to include your team's specific pipeline names, routing tables, and preferences
 
