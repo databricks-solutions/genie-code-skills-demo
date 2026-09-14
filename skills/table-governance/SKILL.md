@@ -32,7 +32,6 @@ Every table MUST have `TBLPROPERTIES` with at minimum:
 ```sql
 TBLPROPERTIES (
   "quality" = "<bronze|silver|gold>",
-  "owner" = "<team-or-domain>",
   "domain" = "<business-domain>"
 )
 ```
@@ -88,15 +87,16 @@ Use tags for discoverability and governance automation:
 | `domain` | `finance`, `hr`, `marketing`, etc. | Business domain |
 | `pii` | `true`, `false` | PII flag for governance scanning |
 | `data_classification` | `public`, `internal`, `confidential`, `restricted` | Access control tier |
-| `owner` | `<team-name>` | Ownership for accountability |
 | `sla` | `daily`, `hourly`, `real-time` | Freshness expectation |
+
+Do not put `owner` in TBLPROPERTIES (reserved). Do not use an `owner` UC tag to fake table ownership -- Unity Catalog owner is the pipeline run-as identity.
 
 ## Governance Checklist
 
 Before completing any table definition, verify ALL of the following:
 
 - [ ] `COMMENT` clause is present and descriptive
-- [ ] `TBLPROPERTIES` includes at least `quality` and `owner`
+- [ ] `TBLPROPERTIES` includes at least `quality` (and `domain` where known). Do not set `owner`.
 - [ ] If PII is present: `contains_pii` and `pii_columns` are in TBLPROPERTIES
 - [ ] If PII is present: COMMENT mentions `CONTAINS PII`
 - [ ] Column descriptions added for primary keys, derived columns, and PII columns

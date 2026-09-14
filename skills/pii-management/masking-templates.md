@@ -71,7 +71,7 @@ AS SELECT
   ROUND(AVG(age), 1) AS avg_age,
   current_timestamp() AS audit_timestamp,
   'gold_aggregation' AS source_system
-FROM LIVE.silver_customers
+FROM silver_customers
 GROUP BY region, income_tier, credit_tier;
 ```
 

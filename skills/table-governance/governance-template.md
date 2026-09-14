@@ -30,7 +30,6 @@ CREATE OR REFRESH MATERIALIZED VIEW silver_customers(
 COMMENT "Cleaned customer data with derived tiers from bronze_customers - CONTAINS PII: email_hash, phone_masked, age"
 TBLPROPERTIES (
   "quality" = "silver",
-  "owner" = "data-engineering",
   "domain" = "customer",
   "contains_pii" = "true",
   "pii_columns" = "email_hash,phone_masked,age",
@@ -55,7 +54,7 @@ AS SELECT
   END AS data_quality_flag,
   current_timestamp() AS audit_timestamp,
   'crm_system' AS source_system
-FROM LIVE.bronze_customers;
+FROM bronze_customers;
 
 ALTER TABLE silver_customers
   ALTER COLUMN customer_id COMMENT 'Unique customer identifier from CRM',

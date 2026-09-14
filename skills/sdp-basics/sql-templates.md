@@ -19,12 +19,30 @@ CASE
 END AS data_quality_flag
 ```
 
-## Bronze materialized view
+## Bronze streaming table (Auto Loader)
+
+```sql
+CREATE OR REFRESH STREAMING TABLE bronze_transactions
+COMMENT "Raw transaction data from POS files"
+TBLPROPERTIES ("quality" = "bronze", "domain" = "finance")
+CLUSTER BY AUTO
+AS SELECT
+  *,
+  current_timestamp() AS audit_timestamp,
+  'pos' AS source_system
+FROM STREAM read_files(
+  "/Volumes/<catalog>/<schema>/raw_data/transactions/",
+  format => "json"
+)
+WHERE transaction_id IS NOT NULL;
+```
+
+## Bronze materialized view (existing table)
 
 ```sql
 CREATE OR REFRESH MATERIALIZED VIEW bronze_transactions
 COMMENT "Raw transaction data from POS systems"
-TBLPROPERTIES ("quality" = "bronze")
+TBLPROPERTIES ("quality" = "bronze", "domain" = "finance")
 AS SELECT
   *,
   current_timestamp() AS audit_timestamp,

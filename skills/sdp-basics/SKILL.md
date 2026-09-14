@@ -27,7 +27,8 @@ Never use PascalCase, UPPERCASE, kebab-case, or camelCase. Never omit the layer 
 |------|-------------|--------|
 | `STREAMING TABLE` | File ingestion (Auto Loader), CDC, real-time data | `CREATE OR REFRESH STREAMING TABLE` |
 | `MATERIALIZED VIEW` | Batch data from existing Delta tables, aggregations | `CREATE OR REFRESH MATERIALIZED VIEW` |
-| `LIVE.table_name` | Referencing tables within the same pipeline | `FROM LIVE.bronze_articles` |
+
+Do **not** use `CREATE OR REFRESH LIVE TABLE` (deprecated) or the `LIVE.` virtual schema. In default publishing mode, `LIVE.` is ignored. Reference other datasets in the same pipeline by unqualified table name (pipeline catalog/schema) or a fully qualified `catalog.schema.table`. See [LIVE schema (legacy)](https://docs.databricks.com/aws/en/ldp/live-schema).
 
 ## Comments
 
@@ -41,12 +42,12 @@ Every table MUST have a `COMMENT` clause describing its purpose:
 
 ## Table Properties
 
-Every table MUST have `TBLPROPERTIES` with at least the quality tag:
+Every table MUST have `TBLPROPERTIES` with at least `quality` (add `domain` where known). Do **not** set `"owner"` -- Databricks reserves that key and raises an error. Table ownership is the pipeline run-as identity ([reserved table property keys](https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-tblproperties)).
 
 ```sql
-TBLPROPERTIES ("quality" = "bronze")
-TBLPROPERTIES ("quality" = "silver", "delta.enableChangeDataFeed" = "true", "delta.enableRowTracking" = "true")
-TBLPROPERTIES ("quality" = "gold", "delta.enableChangeDataFeed" = "true")
+TBLPROPERTIES ("quality" = "bronze", "domain" = "finance")
+TBLPROPERTIES ("quality" = "silver", "domain" = "finance", "delta.enableChangeDataFeed" = "true", "delta.enableRowTracking" = "true")
+TBLPROPERTIES ("quality" = "gold", "domain" = "finance", "delta.enableChangeDataFeed" = "true")
 ```
 
 ## Audit Columns
@@ -89,6 +90,7 @@ Add `CLUSTER BY AUTO` for `STREAMING TABLE` definitions.
 
 ## Joins
 
-- Use `LIVE.table_name` to reference tables within the same pipeline
+- Reference other datasets in the same pipeline by table name (`FROM bronze_articles`), not `LIVE.bronze_articles`
 - Use fully qualified names for tables outside the pipeline
+- Read streaming sources with the `STREAM` keyword (`FROM STREAM read_files(...)` or `FROM STREAM source_table`). Do not use `STREAM` when creating a materialized view.
 - Always use explicit `JOIN` syntax with table aliases

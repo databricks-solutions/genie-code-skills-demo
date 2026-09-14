@@ -9,7 +9,6 @@ CREATE OR REFRESH STREAMING TABLE bronze_reviews
 COMMENT "Raw customer reviews ingested from <catalog>.<bakehouse_schema>.customer_reviews"
 TBLPROPERTIES (
   "quality" = "bronze",
-  "owner" = "dsml",
   "domain" = "customer_voice"
 )
 CLUSTER BY AUTO
@@ -41,7 +40,6 @@ CREATE OR REFRESH MATERIALIZED VIEW silver_review_sentiment(
 COMMENT "Customer reviews with AI-derived sentiment, topic and entities from bronze_reviews"
 TBLPROPERTIES (
   "quality" = "silver",
-  "owner" = "dsml",
   "domain" = "customer_voice",
   "delta.enableChangeDataFeed" = "true",
   "delta.enableRowTracking" = "true"
@@ -74,7 +72,7 @@ AS SELECT
   END AS data_quality_flag,
   current_timestamp() AS audit_timestamp,
   'bakehouse_marketplace' AS source_system
-FROM LIVE.bronze_reviews;
+FROM bronze_reviews;
 
 ALTER TABLE silver_review_sentiment
   ALTER COLUMN review_id COMMENT 'Unique review identifier from bakehouse.media.customer_reviews',
@@ -95,7 +93,6 @@ CREATE OR REFRESH MATERIALIZED VIEW gold_review_sentiment_by_franchise
 COMMENT "Sentiment distribution by franchise and topic, sourced from silver_review_sentiment"
 TBLPROPERTIES (
   "quality" = "gold",
-  "owner" = "dsml",
   "domain" = "customer_voice",
   "delta.enableChangeDataFeed" = "true"
 )
@@ -115,7 +112,7 @@ AS SELECT
   ) AS negative_pct,
   current_timestamp() AS audit_timestamp,
   'gold_aggregation' AS source_system
-FROM LIVE.silver_review_sentiment s
+FROM silver_review_sentiment s
 JOIN <catalog>.<bakehouse_schema>.franchises f
   ON s.franchise_id = f.franchise_id
 WHERE s.data_quality_flag = 'CLEAN'
