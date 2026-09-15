@@ -20,6 +20,23 @@ The skills, instructions, and standards in this repo are designed to be portable
 | `instructions_to_use/` | `local_deployment/` | Ready-to-use instruction files with your org/repo values filled in |
 | Any other `.yml`, `.json`, `.env` | `local_deployment/` | Environment-specific overrides |
 
+## Deploy skills to the workspace
+
+The `skills/` folder is ready to import as Genie Code skills. Use a vibe tool, the CLI script, or a manual copy -- same result.
+
+- **Vibe tool:** open this repo and ask it to deploy `skills/` into `/Users/{you}/.assistant/skills/` or `Workspace/.assistant/skills/`.
+- **CLI** (from the repo root, Databricks CLI authenticated):
+
+```bash
+# User-level: /Users/{you}/.assistant/skills/
+./skills/deploy.sh --profile <your-cli-profile>
+
+# Workspace-level: Workspace/.assistant/skills/  (workspace admin)
+./skills/deploy.sh --workspace --profile <your-cli-profile>
+```
+
+`--overwrite` is built in on the script, so re-runs replace the skill files. Start a new Genie Code chat after deploying.
+
 ## For Other Users of This Repo
 
 If you clone this repo and want to deploy to your own workspace:
@@ -154,38 +171,25 @@ Re-runs are safe: the Marketplace install is skipped if the scratch catalog alre
 
 ### MCP Connection
 
-The MCP connection must be created in a **SQL context** so that the `secret()` function resolves -- the SQL Editor works, and so does the SQL Statement Execution API (run against a SQL warehouse). Plain REST/CLI catalog APIs and DAB do **not** resolve `secret()`, so use one of the SQL paths below.
-
-1. Store your GitHub PAT in a secret scope. Because this repo is **public**, the token needs **no scopes** -- a classic PAT with no scopes selected, or a fine-grained PAT with read-only `Contents` access to the public repo, is enough (do not grant `repo` / `read:org`):
+Create a Unity Catalog HTTP MCP connection with a **no-scope GitHub PAT**
+(not managed GitHub OAuth). See [`mcp/README.md`](../mcp/README.md).
 
 ```bash
-databricks secrets create-scope <your-scope> --profile <your-cli-profile>
-databricks secrets put-secret <your-scope> GITHUB_PAT --string-value "<your-pat>" --profile <your-cli-profile>
+cp mcp/mcp_config.example.json local_deployment/mcp_config.json
+# set github_owner, github_repo, secret_scope, connection_name
+python mcp/deploy_mcp.py --config local_deployment/mcp_config.json
 ```
 
-2. Run this in the **Databricks SQL Editor**:
+Run the printed SQL in a SQL editor. Then Genie Code settings → MCP Servers →
+add `genie-code-skills-mcp` and enable `get_file_contents` and `search_code`.
 
-```sql
-CREATE CONNECTION IF NOT EXISTS `genie-code-skills-mcp`
-TYPE HTTP
-OPTIONS (
-  host = 'https://api.githubcopilot.com',
-  base_path = '/mcp',
-  bearer_token = secret('<your-scope>', 'GITHUB_PAT'),
-  is_mcp_connection = 'true'
-)
-COMMENT 'GitHub MCP - Genie Code skills and standards';
-```
-
-3. Verify:
-
-```sql
-DESCRIBE CONNECTION `genie-code-skills-mcp`;
-```
+Do not use `OAUTH_PROVIDER_GITHUB_MCP` -- those tokens include `read:org` /
+`repo` and fail from Databricks serverless with "GitHub MCP is blocked by IP
+allowlist".
 
 ### Instructions
 
-The `instructions/` folder at the repo root contains **templates** with placeholders. To create ready-to-use versions:
+The `instructions/` folder at the repo root contains **templates** with placeholders. Leave those files as templates. Copy one, fill in the blanks for your workspace (by hand or ask your vibe tool to adjust the copy), and keep filled-in versions here (gitignored) or upload them straight to the workspace:
 
 1. Create `local_deployment/instructions_to_use/` (gitignored)
 2. Pick the files that match your approach:

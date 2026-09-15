@@ -11,6 +11,7 @@
 ## Databricks Development
 
 - Always build SDP (Spark Declarative Pipelines) using **SQL, not Python**. All tables must be defined as `CREATE OR REFRESH MATERIALIZED VIEW` or `CREATE OR REFRESH STREAMING TABLE` in `.sql` files.
+- Do not use the legacy `LIVE.` schema or `CREATE OR REFRESH LIVE TABLE`. Do not set TBLPROPERTIES `"owner"` (reserved).
 - Use `dbldatagen` (Databricks Labs Data Generator) for synthetic data generation. Prefer it over hand-rolling random data with pandas/Faker for Spark-scale data.
 - For Databricks-specific patterns and best practices, refer to the [Databricks AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit).
 

@@ -7,6 +7,11 @@ Reads configuration from a local JSON file (mcp_config.json) and:
   3. Prints the SQL to create the GitHub MCP connection
   4. Prints verification SQL to confirm the connection
 
+This public repo needs a *no-scope* PAT from a GitHub user who is **not** a
+member of an IP-allowlisted org (org-member tokens fail Copilot MCP with
+"GitHub MCP is blocked by IP allowlist"). Do not use managed GitHub OAuth
+(`OAUTH_PROVIDER_GITHUB_MCP`) or a PAT with `repo` / `read:org`.
+
 Usage:
     python deploy_mcp.py                        # uses ./mcp_config.json
     python deploy_mcp.py --config path/to.json  # custom config path
@@ -51,7 +56,9 @@ def load_config(config_path: str) -> dict:
         "secret_key",
         "connection_name",
     ]
-    missing = [k for k in required if not config.get(k) or config[k].startswith("<")]
+    missing = [
+        k for k in required if not config.get(k) or str(config[k]).startswith("<")
+    ]
     if missing:
         print(f"ERROR: These config values are missing or still have placeholders: {missing}")
         sys.exit(1)
@@ -63,7 +70,7 @@ def setup_secret_scope(w: WorkspaceClient, config: dict) -> None:
     scope = config["secret_scope"]
     key = config["secret_key"]
 
-    print(f"\n--- Secret Scope Setup ---")
+    print("\n--- Secret Scope Setup ---")
     print(f"Scope: {scope}")
     print(f"Key:   {key}")
 
@@ -73,13 +80,9 @@ def setup_secret_scope(w: WorkspaceClient, config: dict) -> None:
     except ResourceAlreadyExists:
         print(f"Secret scope already exists: {scope}")
 
-    # The repo is public, so the GitHub MCP server only needs a token to
-    # authenticate the caller -- it does NOT need any scopes. A classic PAT with
-    # no scopes selected (or a fine-grained PAT with read-only Contents access to
-    # the public repo) is sufficient. Do not grant repo / read:org / etc.
     print(
-        "\nNOTE: This repo is public, so a no-scope (or minimal read-only) "
-        "GitHub PAT is sufficient. Do not grant privileged scopes."
+        "\nNOTE: This repo is public. Use a no-scope PAT from a GitHub user who "
+        "is not a member of an IP-allowlisted org. Do not grant repo / read:org."
     )
     pat = getpass.getpass("Enter your GitHub PAT (no scopes required): ")
     if not pat.strip():
@@ -117,13 +120,13 @@ COMMENT 'GitHub MCP connection for {owner}/{repo} - Genie Code skills and standa
 -- Verify the connection was created
 DESCRIBE CONNECTION `{conn_name}`;"""
 
-    print(f"\n--- SQL: Create MCP Connection ---\n")
+    print("\n--- SQL: Create MCP Connection ---\n")
     print(create_sql)
-    print(f"\n--- SQL: Verify Connection ---\n")
+    print("\n--- SQL: Verify Connection ---\n")
     print(verify_sql)
     print(
-        f"\nCopy and run the CREATE CONNECTION SQL in a Databricks SQL Editor."
-        f"\nThen run DESCRIBE CONNECTION to verify it was created successfully."
+        "\nCopy and run the CREATE CONNECTION SQL in a Databricks SQL Editor."
+        "\nThen run DESCRIBE CONNECTION to verify it was created successfully."
     )
 
 

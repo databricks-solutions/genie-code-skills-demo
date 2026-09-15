@@ -7,6 +7,8 @@ description: Apply basic SDP pipeline best practices for table naming, comments,
 
 Always build SDP pipelines using SQL (not Python). When creating or modifying tables in SDP pipelines, follow these rules.
 
+For copy-paste SQL patterns (bronze CREATE, audit columns, data-quality flag), read [sql-templates.md](sql-templates.md).
+
 ## Table Naming
 
 All table names MUST use `lowercase_snake_case` with a layer prefix:
@@ -25,7 +27,8 @@ Never use PascalCase, UPPERCASE, kebab-case, or camelCase. Never omit the layer 
 |------|-------------|--------|
 | `STREAMING TABLE` | File ingestion (Auto Loader), CDC, real-time data | `CREATE OR REFRESH STREAMING TABLE` |
 | `MATERIALIZED VIEW` | Batch data from existing Delta tables, aggregations | `CREATE OR REFRESH MATERIALIZED VIEW` |
-| `LIVE.table_name` | Referencing tables within the same pipeline | `FROM LIVE.bronze_articles` |
+
+Do **not** use `CREATE OR REFRESH LIVE TABLE` (deprecated) or the `LIVE.` virtual schema. In default publishing mode, `LIVE.` is ignored. Reference other datasets in the same pipeline by unqualified table name (pipeline catalog/schema) or a fully qualified `catalog.schema.table`. See [LIVE schema (legacy)](https://docs.databricks.com/aws/en/ldp/live-schema).
 
 ## Comments
 
@@ -39,22 +42,17 @@ Every table MUST have a `COMMENT` clause describing its purpose:
 
 ## Table Properties
 
-Every table MUST have `TBLPROPERTIES` with at least the quality tag:
+Every table MUST have `TBLPROPERTIES` with at least `quality` (add `domain` where known). Do **not** set `"owner"` -- Databricks reserves that key and raises an error. Table ownership is the pipeline run-as identity ([reserved table property keys](https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-tblproperties)).
 
 ```sql
-TBLPROPERTIES ("quality" = "bronze")
-TBLPROPERTIES ("quality" = "silver", "delta.enableChangeDataFeed" = "true", "delta.enableRowTracking" = "true")
-TBLPROPERTIES ("quality" = "gold", "delta.enableChangeDataFeed" = "true")
+TBLPROPERTIES ("quality" = "bronze", "domain" = "finance")
+TBLPROPERTIES ("quality" = "silver", "domain" = "finance", "delta.enableChangeDataFeed" = "true", "delta.enableRowTracking" = "true")
+TBLPROPERTIES ("quality" = "gold", "domain" = "finance", "delta.enableChangeDataFeed" = "true")
 ```
 
 ## Audit Columns
 
-Every table MUST include these two columns as the LAST columns in the SELECT:
-
-```sql
-current_timestamp() AS audit_timestamp,
-'<source_description>' AS source_system
-```
+Every table MUST include these two columns as the LAST columns in the SELECT. See [sql-templates.md](sql-templates.md) for the exact expressions.
 
 ## Data Quality Constraints
 
@@ -66,15 +64,7 @@ current_timestamp() AS audit_timestamp,
 
 ## Data Quality Flag
 
-Silver tables MUST include a `data_quality_flag` column:
-
-```sql
-CASE
-  WHEN <field> IS NULL THEN 'MISSING_<FIELD>'
-  WHEN <field> < 0 THEN 'NEGATIVE_<FIELD>'
-  ELSE 'CLEAN'
-END AS data_quality_flag
-```
+Silver tables MUST include a `data_quality_flag` column. Use the CASE pattern in [sql-templates.md](sql-templates.md).
 
 ## SQL Formatting
 
@@ -100,20 +90,7 @@ Add `CLUSTER BY AUTO` for `STREAMING TABLE` definitions.
 
 ## Joins
 
-- Use `LIVE.table_name` to reference tables within the same pipeline
+- Reference other datasets in the same pipeline by table name (`FROM bronze_articles`), not `LIVE.bronze_articles`
 - Use fully qualified names for tables outside the pipeline
+- Read streaming sources with the `STREAM` keyword (`FROM STREAM read_files(...)` or `FROM STREAM source_table`). Do not use `STREAM` when creating a materialized view.
 - Always use explicit `JOIN` syntax with table aliases
-
-## Example
-
-```sql
-CREATE OR REFRESH MATERIALIZED VIEW bronze_transactions
-COMMENT "Raw transaction data from POS systems"
-TBLPROPERTIES ("quality" = "bronze")
-AS SELECT
-  *,
-  current_timestamp() AS audit_timestamp,
-  'pos' AS source_system
-FROM source_table
-WHERE transaction_id IS NOT NULL;
-```

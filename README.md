@@ -16,7 +16,7 @@ Example [Genie Code](https://docs.databricks.com/aws/en/genie-code/) skills, cus
 - **Manage Unity Catalog** -- governance, permissions, lineage
 - **Orchestrate jobs and workflows** -- scheduling, dependencies, monitoring
 
-Genie Code supports **skills** (task-specific instructions following the open [Agent Skills](https://agentskills.io/) standard) and **MCP** ([Model Context Protocol](https://modelcontextprotocol.io/)) connections that fetch enterprise standards from external sources like GitHub.
+Genie Code supports **skills** (task-specific instructions following the open [Agent Skills](https://agentskills.io/) standard -- each skill is a folder with a `SKILL.md`), **instructions** (user- and workspace-level, plus auto-discovered `AGENTS.md` / `CLAUDE.md` files), and **MCP** ([Model Context Protocol](https://modelcontextprotocol.io/)) connections that fetch enterprise standards from external sources like GitHub.
 
 ---
 
@@ -36,10 +36,10 @@ This repo provides example skills, instructions, and tooling organized by domain
 
 | Folder | Contents |
 |--------|----------|
-| `skills/data_eng/` | Skills for SDP pipelines, PII management, and table/column governance |
-| `skills/dsml/` | DSML skills (currently `sentiment-analysis` for AI-function pipelines) |
-| `instructions/` | Custom instruction templates (user-level and workspace-level) |
-| `mcp/` | MCP connection setup: deploy script and config template |
+| `skills/` | One folder per skill (`SKILL.md` + templates). Deploy with a vibe tool, `./skills/deploy.sh`, or a manual copy; also served via MCP |
+| `AGENTS.md` | Auto-discovered enterprise standards -- Genie Code reads this automatically from the workspace directory tree |
+| `instructions/` | Instruction **templates** (placeholders). Copy and fill in for your workspace -- by hand or with a vibe tool. Do not treat these as ready-to-upload. |
+| `mcp/` | Unity Catalog HTTP MCP connection to GitHub (no-scope PAT). See `mcp/README.md`. |
 | `sample_data_gen/` | Synthetic financial data generation notebook (uses `dbldatagen`) |
 | `marketplace_data/` | Installer notebook + config template for sourcing datasets from the Databricks Marketplace (currently AI/BI Bakehouse) |
 | `local_deployment/` | **Gitignored.** Your workspace-specific DAB config for deploying to your environment. See `local_deployment/README.md` for setup instructions. |
@@ -60,7 +60,7 @@ Add `table-governance`, `sdp-basics`, and `pii-management` skills to your worksp
 
 ### 3. MCP + Instructions
 
-Connect a GitHub MCP server that points to the same skills in this repo. Add custom instructions that tell Genie Code to fetch and apply them dynamically. The result is automatic compliance with organizational policies, maintained centrally in version control.
+Connect Genie Code to GitHub through a Unity Catalog MCP connection (`genie-code-skills-mcp`) so it fetches the same skills from this public repo. The result is automatic compliance with organizational policies, maintained centrally in version control.
 
 ---
 
@@ -70,74 +70,102 @@ Connect a GitHub MCP server that points to the same skills in this repo. Add cus
 
 - A Databricks workspace with Genie Code enabled
 - [Databricks CLI](https://docs.databricks.com/dev-tools/cli/index.html) installed and configured
-- A GitHub account (for MCP setup)
-- Python 3.9+ with `databricks-sdk` installed (for MCP deploy script)
+- A GitHub personal access token with **no scopes** (this repo is public)
 
 ### 1. Install Skills
 
-Copy the skill files from `skills/data_eng/` to your Databricks workspace:
+The `skills/` folder is ready to copy into Genie Code's skills directory. Each skill is its own folder with a required `SKILL.md` plus companion template markdown (the layout from [Extend Genie Code with agent skills](https://docs.databricks.com/aws/en/genie-code/skills)).
+
+**Use a vibe tool (Genie Code, Cursor, or similar), or do it by hand.** Either works:
+
+- **Vibe tool:** open this repo and ask it to deploy the `skills/` folders into your workspace skills directory -- user-level `/Users/{you}/.assistant/skills/` or workspace-level `Workspace/.assistant/skills/` (admin).
+- **Manual / CLI:** copy the folders in the workspace UI, or from the repo root:
+
+```bash
+# User-level -- /Users/{you}/.assistant/skills/  (uses your CLI identity)
+./skills/deploy.sh
+
+# Same, with an explicit CLI profile
+./skills/deploy.sh --profile <your-cli-profile>
+
+# Workspace-level -- Workspace/.assistant/skills/  (workspace admin)
+./skills/deploy.sh --workspace --profile <your-cli-profile>
+```
+
+The script creates the target folder if needed and overwrites files already there. Equivalent CLI:
+
+```bash
+databricks workspace mkdirs /Workspace/Users/<you>/.assistant/skills
+databricks workspace import-dir skills/table-governance \
+  /Workspace/Users/<you>/.assistant/skills/table-governance --overwrite
+# repeat for sdp-basics, pii-management, sentiment-analysis
+```
+
+After install, the workspace looks like:
 
 ```
-Workspace/
-  .assistant/
-    skills/
-      table-governance.md
-      sdp-basics.md
-      pii-management.md
+Workspace/.assistant/skills/            # workspace-level
+# or /Users/{you}/.assistant/skills/    # user-level
+  table-governance/
+    SKILL.md
+    governance-template.md
+  sdp-basics/
+    SKILL.md
+    sql-templates.md
+  pii-management/
+    SKILL.md
+    masking-templates.md
+  sentiment-analysis/
+    SKILL.md
+    pipeline-templates.md
 ```
 
-Skills can be installed at the workspace level (`Workspace/.assistant/skills/`) or user level (`/Users/{username}/.assistant/skills/`).
-
-Once installed, Genie Code picks them up automatically. You can also invoke them explicitly with `@table-governance`, `@sdp-basics`, or `@pii-management`.
+Start a **new Genie Code chat** so the skills load. Genie Code auto-loads a skill when your request matches its `description`. In chat, you can still force a skill with `@table-governance`, `@sdp-basics`, `@pii-management`, or `@sentiment-analysis` (`@` is skill invocation, not instruction syntax).
 
 ### 2. Set Up MCP (Optional)
 
-Connect Genie Code to a GitHub MCP server to fetch the same skills dynamically -- no need to copy files into the workspace manually. The MCP connection points directly to the `skills/data_eng/` folder in this repo (or your fork of it).
+Genie Code fetches `skills/` from this GitHub repo through a Unity Catalog HTTP
+MCP connection (`genie-code-skills-mcp`) authenticated with a **no-scope GitHub
+PAT**. See [`mcp/README.md`](mcp/README.md).
 
-> **About the GitHub token:** the GitHub-hosted MCP server requires a token to authenticate, but because this repo is **public** the token needs **no scopes**. A classic PAT with **no scopes selected**, or a fine-grained PAT with **read-only `Contents` access to the public repo**, is sufficient. Do not grant `repo`, `read:org`, or other privileged scopes.
-
-**a. Configure**
-
-```bash
-cd mcp/
-cp mcp_config.example.json mcp_config.json
-# Edit mcp_config.json with your GitHub org, repo, and secret scope details
-```
-
-**b. Deploy**
+Do not use managed GitHub OAuth or a PAT belonging to a member of an
+IP-allowlisted GitHub org (including a PAT with `repo` / `read:org`).
+Those tokens fail from Databricks serverless with
+"GitHub MCP is blocked by IP allowlist". Use a **no-scope PAT** from a
+GitHub user outside that org.
 
 ```bash
-pip install databricks-sdk
-python deploy_mcp.py
+cp mcp/mcp_config.example.json mcp/mcp_config.json   # fill in owner/repo/secret scope
+python mcp/deploy_mcp.py --config mcp/mcp_config.json
 ```
 
-The script will:
-1. Create a Databricks secret scope and store your GitHub PAT
-2. Print the SQL to create the MCP connection
-
-**c. Create the connection**
-
-Copy the printed SQL and run it in a Databricks SQL Editor.
+Run the printed `CREATE CONNECTION` SQL in a SQL editor so `secret()` resolves.
+Then enable the connection in Genie Code settings → MCP Servers
+(`get_file_contents`, `search_code`), point the MCP instruction templates at
+this repo (or your fork), and start a **new** Genie Code chat.
 
 ### 3. Add Instructions
 
-The `instructions/` folder contains **templates** with placeholders. To create ready-to-use instruction files for your workspace:
+The files in [`instructions/`](instructions/) are **templates with placeholders**. They are not ready to upload as-is. Copy one, fill in `<your-pipeline-name>`, GitHub org/repo, and any other blanks for *your* workspace, then upload. Do that by hand, or ask your vibe tool to adjust the template -- keep the copies in this repo as templates so the next person can fill them in too.
 
-1. Set up your local deployment folder (see `local_deployment/README.md`)
-2. Choose your approach (**direct skills** or **MCP**) and scope (**user-level** or **workspace-level**)
-3. Copy the matching ready-to-use file from `local_deployment/instructions_to_use/`:
+Filled-in copies belong in gitignored `local_deployment/instructions_to_use/` (see `local_deployment/README.md`), not in `instructions/`.
+
+1. Choose your approach (**direct skills** or **MCP**) and scope (**user-level** or **workspace-level**)
+2. Start from the matching template (or from a filled-in copy under `local_deployment/instructions_to_use/` if you already made one):
 
 | Scope | Direct Skills | MCP |
 |-------|--------------|-----|
 | User-level | `user_instructions_skills.md` | `user_instructions_mcp.md` |
 | Workspace-level | `workspace_instructions_skills.md` | `workspace_instructions_mcp.md` |
 
-4. Fill in any remaining placeholders (GitHub org/repo for MCP files)
-5. Upload to your workspace:
+3. Fill in remaining placeholders (GitHub org/repo for MCP files)
+4. Upload to your workspace:
    - **User-level** → `/Users/{username}/.assistant_instructions.md`
    - **Workspace-level** → `Workspace/.assistant_workspace_instructions.md`
 
 Workspace instructions take priority over user instructions when both are present.
+
+> **Auto-discovered instructions:** Genie Code also walks up the workspace directory tree and automatically reads any `AGENTS.md` (or `CLAUDE.md`) files it finds -- no upload or configuration needed. This repo ships a root [`AGENTS.md`](AGENTS.md) with the always-on standards, so once the repo is synced into a workspace those conventions apply to every teammate automatically. See [Customize Genie Code with custom instructions](https://docs.databricks.com/aws/en/genie-code/instructions).
 
 ---
 
@@ -229,19 +257,28 @@ genie-code-skills-demo/
 │   ├── public-repo-compliance.md
 │   ├── coding-standards.md
 │   └── branch-conventions.md
-├── skills/
-│   ├── data_eng/                           # Data engineering skills (also served via MCP)
-│   │   ├── table-governance.md             # Table/column documentation, UC tags, PII labeling
-│   │   ├── sdp-basics.md                   # SDP naming, audit columns, TBLPROPERTIES
-│   │   └── pii-management.md               # PII detection and labelling
-│   └── dsml/
-│       └── sentiment-analysis.md           # AI-function patterns (ai_analyze_sentiment, ai_classify, ai_extract)
+├── AGENTS.md                               # Auto-discovered enterprise standards (Genie Code reads this automatically)
+├── skills/                                 # One folder per skill (also served via MCP)
+│   ├── deploy.sh                           # Optional CLI deploy (vibe tool or manual copy also work)
+│   ├── table-governance/
+│   │   ├── SKILL.md                        # Governance rules and checklist
+│   │   └── governance-template.md          # Reusable CREATE / ALTER / TAG SQL
+│   ├── sdp-basics/
+│   │   ├── SKILL.md                        # Naming, audit columns, DQ rules
+│   │   └── sql-templates.md                # Reusable CREATE SQL
+│   ├── pii-management/
+│   │   ├── SKILL.md                        # Detection, labeling, layer rules
+│   │   └── masking-templates.md            # Reusable masking / derivation SQL
+│   └── sentiment-analysis/
+│       ├── SKILL.md                        # AI-function rules and guardrails
+│       └── pipeline-templates.md           # Bronze / silver / gold SQL
 ├── instructions/                           # Instruction TEMPLATES (with placeholders)
 │   ├── .assistant_instructions.md          # User-level template
 │   └── .assistant_workspace_instructions.md # Workspace-level template
 ├── mcp/
-│   ├── mcp_config.example.json             # MCP config template (points to skills/ folder)
-│   └── deploy_mcp.py                       # MCP connection deploy script
+│   ├── README.md                           # No-scope PAT GitHub MCP connection
+│   ├── mcp_config.example.json             # Owner / repo / secret scope / connection name
+│   └── deploy_mcp.py                       # Stores PAT and prints CREATE CONNECTION SQL
 ├── sample_data_gen/
 │   ├── generate_financial_data.py          # Databricks notebook (dbldatagen, parameterized)
 │   ├── deploy_config.example.yaml          # Deploy config template (placeholders)
@@ -273,10 +310,10 @@ genie-code-skills-demo/
 
 This repo is a starting point. To adapt it for your organization:
 
-1. **Add your own skills** -- create new `.md` files in `skills/data_eng/` or add new domain folders (e.g., `skills/dsml/`, `skills/dashboards/`)
-2. **Update existing skills** -- edit the skill files in `skills/data_eng/` to match your organization's naming conventions, PII policies, and quality rules
+1. **Add your own skills** -- create a new folder in `skills/` with a `SKILL.md` (frontmatter `name` + `description`, matching the folder name). Optionally add companion markdown for templates, as in the official skill layout. Push updates with a vibe tool, `./skills/deploy.sh`, or a manual copy.
+2. **Update existing skills** -- edit `SKILL.md` and the companion template files under `skills/<skill-name>/` to match your organization's naming conventions, PII policies, and quality rules
 3. **Fork and serve via MCP** -- fork this repo, customize the skills, and point your MCP connection to your fork. Changes in GitHub are picked up automatically by Genie Code.
-4. **Customize instructions** -- edit the templates in `instructions/` to include your team's specific pipeline names, routing tables, and preferences
+4. **Customize instructions** -- copy a template from `instructions/`, fill in placeholders for your team (pipeline names, routing, org/repo). Ask a vibe tool to adjust the copy if you want; leave the repo templates as templates.
 
 ---
 
